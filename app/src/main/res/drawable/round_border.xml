@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#FFFFFF"/> <!-- Màu nền bên trong (có thể thay đổi) -->
+    <stroke android:color="#00000000" android:width="5dp"/> <!-- Màu và độ dày của viền -->
+    <corners android:radius="150dp"/> <!-- Tạo hình tròn, radius phải bằng hoặc lớn hơn nửa chiều cao hoặc chiều rộng của ImageView -->
+</shape>
