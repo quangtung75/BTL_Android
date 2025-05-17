@@ -5,9 +5,10 @@ public class ServiceManager {
     private static ServiceManager instance;
 
     // List of services
+    private final AuthService authService;
 
     private ServiceManager() {
-
+        authService = new AuthService();
     }
 
     public static ServiceManager getInstance() {
@@ -18,4 +19,7 @@ public class ServiceManager {
     }
 
     // Add methods to get services
+    public AuthService getAuthService() {
+        return authService;
+    }
 }
