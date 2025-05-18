@@ -2,6 +2,7 @@ package com.qtcoding.btl_android.config;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.qtcoding.btl_android.BuildConfig;
 
 public class CloudinaryConfig {
     private static Cloudinary cloudinary;
@@ -9,9 +10,9 @@ public class CloudinaryConfig {
     public static Cloudinary getCloudinary() {
         if (cloudinary == null) {
             cloudinary = new Cloudinary(ObjectUtils.asMap(
-                    "cloud_name", "ddhzybyor",      // Tên Cloudinary
-                    "api_key", "298527834638236",            // API Key
-                    "api_secret", "beqgLYFxT4yL-_dt3ktH37-N0EI"       // API Secret
+                    "cloud_name", BuildConfig.CLOUDINARY_NAME,
+                    "api_key", BuildConfig.CLOUDINARY_API_KEY,
+                    "api_secret", BuildConfig.CLOUDINARY_API_SECRET
             ));
         }
         return cloudinary;

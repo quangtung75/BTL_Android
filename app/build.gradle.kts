@@ -1,7 +1,15 @@
+import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
     id("androidx.navigation.safeargs")
+}
+
+// Load local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
 }
 
 android {
@@ -16,6 +24,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "CLOUDINARY_NAME", "\"${localProperties["cloudinary_name"]}\"")
+        buildConfigField("String", "CLOUDINARY_API_KEY", "\"${localProperties["cloudinary_api_key"]}\"")
+        buildConfigField("String", "CLOUDINARY_API_SECRET", "\"${localProperties["cloudinary_api_secret"]}\"")
     }
 
     buildTypes {
@@ -26,6 +38,9 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+    buildFeatures {
+        buildConfig = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
