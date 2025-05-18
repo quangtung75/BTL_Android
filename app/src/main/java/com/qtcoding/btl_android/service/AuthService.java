@@ -19,6 +19,17 @@ public class AuthService {
         return firebaseAuth.getCurrentUser();
     }
 
+    public void signUp(String email, String password, ServiceCallback<Void> callback) {
+        firebaseAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        callback.onSuccess(null); // Vì không trả về dữ liệu cụ thể
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
     public void login(String email, String password, ServiceCallback<Void> callback){
         firebaseAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override

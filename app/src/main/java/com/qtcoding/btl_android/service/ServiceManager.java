@@ -7,8 +7,12 @@ public class ServiceManager {
     // List of services
     private final AuthService authService;
 
+    private final UserService userService;
+
     private ServiceManager() {
+
         authService = new AuthService();
+        userService = new UserService();
     }
 
     public static ServiceManager getInstance() {
@@ -21,5 +25,9 @@ public class ServiceManager {
     // Add methods to get services
     public AuthService getAuthService() {
         return authService;
+    }
+
+    public UserService getUserService() {
+        return userService;
     }
 }
