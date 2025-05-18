@@ -2,63 +2,114 @@ package com.qtcoding.btl_android;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link LoginFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import com.qtcoding.btl_android.service.ServiceCallback;
+import com.qtcoding.btl_android.service.ServiceManager;
+
 public class LoginFragment extends Fragment {
+    private EditText edtEmail, edtPassword;
+    private Button btnLogin, btnLoginWithGoogle;
+    private TextView tvDontHaveAccount;
+    private ProgressBar progressBar;
+    private NavController navController;
+    private String email, password;
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public LoginFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment LoginFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static LoginFragment newInstance(String param1, String param2) {
-        LoginFragment fragment = new LoginFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
+    @Nullable
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_login, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        setEvents();
+    }
+
+    private void initView(View view){
+        edtEmail = view.findViewById(R.id.edt_email_login);
+        edtPassword = view.findViewById(R.id.edt_password_login);
+        btnLogin = view.findViewById(R.id.btn_login);
+        btnLoginWithGoogle = view.findViewById(R.id.btn_loginWithGoogle);
+        tvDontHaveAccount = view.findViewById(R.id.tv_dontHaveAccount);
+        progressBar = view.findViewById(R.id.progressBar);
+        navController = Navigation.findNavController(view);
+    }
+
+    private void setEvents(){
+        btnLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (validateData()){
+                    performLogin();
+                }
+            }
+        });
+        btnLoginWithGoogle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                performLoginWithGoogle();
+            }
+        });
+        tvDontHaveAccount.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                navController.navigate(R.id.action_loginFragment_to_signUpFragment);
+            }
+        });
+    }
+
+    private void performLogin(){
+        progressBar.setVisibility(View.VISIBLE);
+        ServiceManager.getInstance().getAuthService().login(email, password, new ServiceCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                progressBar.setVisibility(View.GONE);
+                //Chuyen den trang chinh
+                navController.navigate(R.id.action_auth_to_main);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                progressBar.setVisibility(View.GONE);
+                //Hien thi loi
+                Toast.makeText(getContext(), "Login failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void performLoginWithGoogle(){
+        Toast.makeText(getContext(),"Login with Google", Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean validateData(){
+        email = edtEmail.getText().toString();
+        password = edtPassword.getText().toString();
+
+        if (email.isEmpty()){
+            edtEmail.setError("Email required");
+            return false;
+        }
+        if (password.isEmpty()){
+            edtPassword.setError("Password required");
+            return false;
+        }
+        return true;
     }
 }
