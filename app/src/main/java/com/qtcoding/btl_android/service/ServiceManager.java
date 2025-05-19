@@ -10,12 +10,15 @@ public class ServiceManager {
     private final UserService userService;
 
     private final VocabCollectionService vocabCollectionService;
+    private final VocabularyService vocabularyService;
+
 
     private ServiceManager() {
 
         authService = new AuthService();
         userService = new UserService();
         vocabCollectionService = new VocabCollectionService();
+        vocabularyService = new VocabularyService();
     }
 
     public static ServiceManager getInstance() {
@@ -35,5 +38,9 @@ public class ServiceManager {
     }
     public VocabCollectionService getVocabCollectionService() {
         return vocabCollectionService;
+    }
+
+    public VocabularyService getVocabularyService() {
+        return vocabularyService;
     }
 }
