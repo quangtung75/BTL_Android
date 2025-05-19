@@ -1,15 +1,22 @@
 package com.qtcoding.btl_android.service;
 
+import androidx.annotation.NonNull;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.qtcoding.btl_android.model.UserOwnedCollection;
 import com.qtcoding.btl_android.model.VocabCollection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class VocabCollectionService {
     private final FirebaseFirestore db;
@@ -221,5 +228,125 @@ public class VocabCollectionService {
                             .addOnFailureListener(callback::onFailure);
                 })
                 .addOnFailureListener(callback::onFailure);
+    }
+
+    //cac ham crud
+    public void addCollection(String currentUserId, VocabCollection collection, ServiceCallback<Void> callback){
+        collection.setId(UUID.randomUUID().toString());
+        collection.setOwnerId(currentUserId);
+        collection.setFollowerCount(0);
+        collection.setCardCount(0);
+        collection.setOwned(true); //set ng tao collection la chu
+        collection.setFollowing(false); //do moi tao nen chua co ai follow
+
+        db.collection("vocabCollections").document(collection.getId()).set(collection).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void unused) {
+                //tao document id va obj roi ghi vao collection
+                String documentId = currentUserId + "_" + collection.getId();
+                UserOwnedCollection userOwnedCollection = new UserOwnedCollection(currentUserId, collection.getId());
+                db.collection("userOwnedCollections").document(documentId).set(userOwnedCollection)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
+                                //thanh cong
+                                callback.onSuccess(null);
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                //ghi userOwnedCollection ko dc
+                                callback.onFailure(e);
+                            }
+                        });
+            }
+        })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        //luu vocabCollection fail
+                        callback.onFailure(e);
+                    }
+                });
+    }
+    public void updateCollection(VocabCollection collection, ServiceCallback<Void> callback){
+        db.collection("vocabCollections").document(collection.getId())
+                .update("name", collection.getName(), "description", collection.getDescription())
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        callback.onSuccess(null);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+    }
+
+    public void deleteCollection(String currentUserId, String collectionId, ServiceCallback<Void> callback){
+        //xoa khoi collection
+        db.collection("vocabCollections").document(collectionId).delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        //xoa khoi userCollection
+                        db.collection("userOwnedCollections").document(currentUserId + "_" + collectionId)
+                                .delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void unused) {
+                                        //xoa het vocab lien quan
+                                        db.collection("vocabularies").whereEqualTo("collectionId", collectionId)
+                                                .get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                                                    @Override
+                                                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                                                        for (var doc : queryDocumentSnapshots) {
+                                                            doc.getReference().delete();
+                                                        }
+                                                        // xoa het follow trong userCollectionFollows
+                                                        db.collection("userCollectionFollows").whereEqualTo("collectionId", collectionId)
+                                                                .get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                                                                    @Override
+                                                                    public void onSuccess(QuerySnapshot followSnapshots) {
+                                                                        for (var doc : followSnapshots) {
+                                                                            doc.getReference().delete();
+                                                                        }
+                                                                        callback.onSuccess(null);
+                                                                    }
+                                                                })
+                                                                .addOnFailureListener(new OnFailureListener() {
+                                                                    @Override
+                                                                    public void onFailure(@NonNull Exception e) {
+                                                                        callback.onFailure(e);
+                                                                    }
+                                                                });
+
+                                                    }
+                                                })
+                                                .addOnFailureListener(new OnFailureListener() {
+                                                    @Override
+                                                    public void onFailure(@NonNull Exception e) {
+                                                        callback.onFailure(e);
+                                                    }
+                                                });
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        callback.onFailure(e);
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
     }
 }
