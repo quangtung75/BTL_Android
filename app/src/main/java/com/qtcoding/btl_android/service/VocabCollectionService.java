@@ -132,4 +132,94 @@ public class VocabCollectionService {
                 }).addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
+
+    // Lấy tất cả VocabCollection mà người dùng sở hữu
+    public void getOwnedCollections(String currentUserId, ServiceCallback<List<VocabCollection>> callback) {
+        db.collection("userOwnedCollections")
+                .whereEqualTo("userId", currentUserId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<String> collectionIds = new ArrayList<>();
+                    for (var doc : queryDocumentSnapshots) {
+                        String collectionId = doc.getString("collectionId");
+                        if (collectionId != null) {
+                            collectionIds.add(collectionId);
+                        }
+                    }
+                    if (collectionIds.isEmpty()) {
+                        callback.onSuccess(new ArrayList<>());
+                        return;
+                    }
+                    db.collection("vocabCollections")
+                            .whereIn("id", collectionIds)
+                            .get()
+                            .addOnSuccessListener(collectionSnapshots -> {
+                                List<VocabCollection> collections = new ArrayList<>();
+                                for (var doc : collectionSnapshots) {
+                                    VocabCollection collection = doc.toObject(VocabCollection.class);
+                                    if (collection != null) {
+                                        collection.setOwned(true);
+                                        collections.add(collection);
+                                    }
+                                }
+                                // Kiểm tra trạng thái follow
+                                db.collection("userCollectionFollows")
+                                        .whereEqualTo("userId", currentUserId)
+                                        .whereIn("collectionId", collectionIds)
+                                        .get()
+                                        .addOnSuccessListener(followSnapshots -> {
+                                            List<String> followedIds = new ArrayList<>();
+                                            for (var doc : followSnapshots) {
+                                                String collectionId = doc.getString("collectionId");
+                                                if (collectionId != null) {
+                                                    followedIds.add(collectionId);
+                                                }
+                                            }
+                                            for (VocabCollection collection : collections) {
+                                                collection.setFollowing(followedIds.contains(collection.getId()));
+                                            }
+                                            callback.onSuccess(collections);
+                                        })
+                                        .addOnFailureListener(callback::onFailure);
+                            })
+                            .addOnFailureListener(callback::onFailure);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+    // Lấy tất cả VocabCollection mà người dùng follow
+    public void getFollowedCollections(String currentUserId, ServiceCallback<List<VocabCollection>> callback) {
+        db.collection("userCollectionFollows")
+                .whereEqualTo("userId", currentUserId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<String> collectionIds = new ArrayList<>();
+                    for (var doc : queryDocumentSnapshots) {
+                        String collectionId = doc.getString("collectionId");
+                        if (collectionId != null) {
+                            collectionIds.add(collectionId);
+                        }
+                    }
+                    if (collectionIds.isEmpty()) {
+                        callback.onSuccess(new ArrayList<>());
+                        return;
+                    }
+                    db.collection("vocabCollections")
+                            .whereIn("id", collectionIds)
+                            .get()
+                            .addOnSuccessListener(collectionSnapshots -> {
+                                List<VocabCollection> collections = new ArrayList<>();
+                                for (var doc : collectionSnapshots) {
+                                    VocabCollection collection = doc.toObject(VocabCollection.class);
+                                    if (collection != null) {
+                                        collection.setOwned(collection.getOwnerId().equals(currentUserId));
+                                        collection.setFollowing(true);
+                                        collections.add(collection);
+                                    }
+                                }
+                                callback.onSuccess(collections);
+                            })
+                            .addOnFailureListener(callback::onFailure);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
 }
