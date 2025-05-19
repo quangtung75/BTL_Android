@@ -2,63 +2,163 @@ package com.qtcoding.btl_android;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link AddCollectionFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import com.google.android.material.appbar.MaterialToolbar;
+import com.qtcoding.btl_android.model.VocabCollection;
+import com.qtcoding.btl_android.service.ServiceCallback;
+import com.qtcoding.btl_android.service.ServiceManager;
+
+
 public class AddCollectionFragment extends Fragment {
+    private MaterialToolbar toolbar;
+    private EditText edtTitle, edtDescription;
+    private Button btnSave, btnCancel, btnDelete;
+    private ProgressBar progressBar;
+    private VocabCollection vocabCollection;
+    private NavController navController;
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public AddCollectionFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment AddCollectionFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static AddCollectionFragment newInstance(String param1, String param2) {
-        AddCollectionFragment fragment = new AddCollectionFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_add_collection, container, false);
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        setEvents();
+    }
+
+    private void initView(View view){
+        toolbar = view.findViewById(R.id.toolbar);
+        edtTitle = view.findViewById(R.id.etTitle);
+        edtDescription = view.findViewById(R.id.etDescription);
+        btnSave = view.findViewById(R.id.btnSave);
+        btnCancel = view.findViewById(R.id.btnCancel);
+        btnDelete = view.findViewById(R.id.btnDelete);
+        progressBar = view.findViewById(R.id.progressBar);
+
+        navController = Navigation.findNavController(view);
+
+        // lay collection ID tu arguments de kiem tra la loai "Add" or "Edit"
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+            vocabCollection = AddCollectionFragmentArgs.fromBundle(getArguments()).getVocabCollection();
+            if (vocabCollection != null) {
+                // dieu chinh UI cho Edit
+                toolbar.setTitle("Edit Collection");
+                btnDelete.setVisibility(View.VISIBLE);
+                edtTitle.setText(vocabCollection.getName());
+                edtDescription.setText(vocabCollection.getDescription());
+            } else {
+                // reset UI o Add
+                toolbar.setTitle("Add Collection");
+                btnDelete.setVisibility(View.GONE);
+            }
         }
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_add_collection, container, false);
+    private void setEvents(){
+        //XU ly Save
+        btnSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String title = edtTitle.getText().toString().trim();
+                String description = edtDescription.getText().toString().trim();
+                String currentUserId = ServiceManager.getInstance().getAuthService().getCurrentUser().getUid();
+                if (title.isEmpty() || description.isEmpty()) {
+                    Toast.makeText(getContext(), "Please fill in all fields", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                progressBar.setVisibility(View.VISIBLE);
+                // xu ly logic collection
+                if (vocabCollection != null) {
+                    // Cap nhat collection cu
+
+                    vocabCollection.setName(title);
+                    vocabCollection.setDescription(description);
+                    ServiceManager.getInstance().getVocabCollectionService().updateCollection(vocabCollection, new ServiceCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(getContext(), "Collection updated successfully", Toast.LENGTH_SHORT).show();
+                            navController.navigateUp();
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(getContext(), "Failed to update collection: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+                else {
+                    // tao moi collection
+
+                    VocabCollection newCollection = new VocabCollection();
+                    newCollection.setName(title);
+                    newCollection.setDescription(description);
+                    newCollection.setOwnerId(currentUserId);
+                    ServiceManager.getInstance().getVocabCollectionService().addCollection(currentUserId, newCollection, new ServiceCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(getContext(), "Collection added successfully", Toast.LENGTH_SHORT).show();
+                            navController.navigateUp();
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(getContext(), "Failed to add collection: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        });
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                navController.navigateUp();
+            }
+        });
+        // xu ly nut Xoa, chi kha dung khi o Edit
+        btnDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                progressBar.setVisibility(View.VISIBLE);
+                if (vocabCollection != null) {
+                    // logic Xoa colletion
+                    String currentUserId = ServiceManager.getInstance().getAuthService().getCurrentUser().getUid();
+                    ServiceManager.getInstance().getVocabCollectionService().deleteCollection(currentUserId, vocabCollection.getId(), new ServiceCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(getContext(), "Collection deleted successfully", Toast.LENGTH_SHORT).show();
+                            navController.navigateUp();
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(getContext(), "Failed to delete collection: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        });
     }
 }
