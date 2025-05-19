@@ -1,6 +1,8 @@
 package com.qtcoding.btl_android;
 
 
+import static com.qtcoding.btl_android.adapter.VocabCollectionAdapter.VIEW_TYPE_DEFAULT;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,6 +23,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.firebase.auth.FirebaseAuth;
 
+import com.qtcoding.btl_android.adapter.VocabCollectionAdapter;
 import com.qtcoding.btl_android.model.VocabCollection;
 import com.qtcoding.btl_android.service.ServiceCallback;
 import com.qtcoding.btl_android.service.VocabCollectionService;
@@ -33,7 +36,7 @@ public class HomeFragment extends Fragment {
     private CardView cardView;
     private ProgressBar progressBar;
     private SwipeRefreshLayout swipeRefreshLayout;
-
+    private VocabCollectionAdapter adapter;
     private VocabCollectionService service;
     private NavController navController;
 
@@ -61,7 +64,8 @@ public class HomeFragment extends Fragment {
         // Khởi tạo RecyclerView và Adapter
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
         String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
+        adapter = new VocabCollectionAdapter(getContext(), currentUserId, VIEW_TYPE_DEFAULT);
+        recyclerView.setAdapter(adapter);
 
         // Khởi tạo service
         service = new VocabCollectionService();
@@ -69,6 +73,28 @@ public class HomeFragment extends Fragment {
 
     private void setEvents() {
         // Xử lý click vào collection để điều hướng đến màn hình chi tiết
+        adapter.setOnCollectionClickListener(collection -> {
+            HomeFragmentDirections.ActionHomeFragmentToDetailCollectionFragment action =
+                    HomeFragmentDirections.actionHomeFragmentToDetailCollectionFragment(collection);
+            navController.navigate(action);
+        });
+
+        // Xử lý click vào CardView để chọn ngẫu nhiên collection
+        cardView.setOnClickListener(v -> {
+            List<VocabCollection> collections = adapter.getCollections();
+            if (collections == null || collections.isEmpty()) {
+                Toast.makeText(getContext(), "No collections available.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            int randomIndex = (int) (Math.random() * collections.size());
+            VocabCollection randomCollection = collections.get(randomIndex);
+
+            HomeFragmentDirections.ActionHomeFragmentToDetailCollectionFragment action =
+                    HomeFragmentDirections.actionHomeFragmentToDetailCollectionFragment(randomCollection);
+            navController.navigate(action);
+        });
+
         // Xử lý kéo xuống để làm mới
         swipeRefreshLayout.setOnRefreshListener(() -> {
             loadTopCollections();
@@ -84,7 +110,7 @@ public class HomeFragment extends Fragment {
             public void onSuccess(List<VocabCollection> result) {
                 progressBar.setVisibility(View.GONE);
                 swipeRefreshLayout.setRefreshing(false); // Ẩn vòng xoay
-                Log.d("Collections", result.toString());
+                adapter.setCollections(result);
             }
 
             @Override

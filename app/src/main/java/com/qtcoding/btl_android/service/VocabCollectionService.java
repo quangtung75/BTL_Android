@@ -1,11 +1,15 @@
 package com.qtcoding.btl_android.service;
 
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.qtcoding.btl_android.model.VocabCollection;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class VocabCollectionService {
     private final FirebaseFirestore db;
@@ -102,6 +106,30 @@ public class VocabCollectionService {
                             })
                             .addOnFailureListener(callback::onFailure);
                 })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void toggleFollow(String currentUserId, String collectionId, boolean isFollowing, ServiceCallback<Void> callback) {
+        DocumentReference followRef = db.collection("userCollectionFollows")
+                .document(currentUserId + "_" + collectionId);
+        DocumentReference collectionRef = db.collection("vocabCollections")
+                .document(collectionId);
+
+        db.runTransaction(transaction -> {
+                    if (isFollowing) {
+                        // Hủy theo dõi
+                        transaction.delete(followRef);
+                        transaction.update(collectionRef, "followerCount", FieldValue.increment(-1));
+                    } else {
+                        // Theo dõi
+                        Map<String, Object> followData = new HashMap<>();
+                        followData.put("userId", currentUserId);
+                        followData.put("collectionId", collectionId);
+                        transaction.set(followRef, followData);
+                        transaction.update(collectionRef, "followerCount", FieldValue.increment(1));
+                    }
+                    return null;
+                }).addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
 }

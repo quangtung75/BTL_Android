@@ -1,6 +1,8 @@
 package com.qtcoding.btl_android;
 
 
+import static com.qtcoding.btl_android.adapter.VocabCollectionAdapter.VIEW_TYPE_SEARCH;
+
 import android.content.Context;
 import android.os.Bundle;
 import android.text.Editable;
@@ -25,6 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.textfield.TextInputEditText;
+import com.qtcoding.btl_android.adapter.VocabCollectionAdapter;
 import com.qtcoding.btl_android.model.VocabCollection;
 import com.qtcoding.btl_android.service.ServiceCallback;
 import com.qtcoding.btl_android.service.ServiceManager;
@@ -37,6 +40,7 @@ public class SearchFragment extends Fragment {
     private TextInputEditText etCollectionName;
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
+    private VocabCollectionAdapter adapter;
     private NavController navController;
     private String currentQuery = "";
 
@@ -57,6 +61,9 @@ public class SearchFragment extends Fragment {
         etCollectionName = view.findViewById(R.id.etCollectionName);
         recyclerView = view.findViewById(R.id.recyclerView);
         progressBar = view.findViewById(R.id.progressBar);
+        adapter = new VocabCollectionAdapter(requireContext(), ServiceManager.getInstance().getAuthService().getCurrentUser().getUid(), VIEW_TYPE_SEARCH);
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerView.setAdapter(adapter);
         navController = Navigation.findNavController(view);
     }
 
@@ -90,11 +97,16 @@ public class SearchFragment extends Fragment {
             }
         });
 
-
+        adapter.setOnCollectionClickListener(collection -> {
+            SearchFragmentDirections.ActionSearchFragmentToDetailCollectionFragment action =
+                    SearchFragmentDirections.actionSearchFragmentToDetailCollectionFragment(collection);
+            navController.navigate(action);
+        });
     }
 
     private void search(String query) {
         if (query.isEmpty()) {
+            adapter.setCollections(new ArrayList<>());
             progressBar.setVisibility(View.GONE);
             return;
         }
@@ -107,7 +119,7 @@ public class SearchFragment extends Fragment {
                 new ServiceCallback<List<VocabCollection>>() {
                     @Override
                     public void onSuccess(List<VocabCollection> result) {
-                        Log.d("Collections", result.toString());
+                        adapter.setCollections(result);
                         progressBar.setVisibility(View.GONE);
                         if (result.isEmpty()) {
                             Toast.makeText(requireContext(), "No collections found", Toast.LENGTH_SHORT).show();
