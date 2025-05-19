@@ -57,4 +57,51 @@ public class VocabCollectionService {
                 })
                 .addOnFailureListener(callback::onFailure);
     }
+
+    // Tìm kiếm VocabCollection theo tên
+    public void searchCollectionsByName(String query, String currentUserId, ServiceCallback<List<VocabCollection>> callback) {
+        db.collection("vocabCollections")
+                .whereGreaterThanOrEqualTo("name", query)
+                .whereLessThanOrEqualTo("name", query + "\uf8ff")
+                .limit(20)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<VocabCollection> collections = new ArrayList<>();
+                    for (var doc : queryDocumentSnapshots) {
+                        VocabCollection collection = doc.toObject(VocabCollection.class);
+                        if (collection != null) {
+                            collection.setOwned(collection.getOwnerId().equals(currentUserId));
+                            collections.add(collection);
+                        }
+                    }
+                    // Kiểm tra trạng thái follow cho tất cả collections
+                    List<String> collectionIds = new ArrayList<>();
+                    for (VocabCollection collection : collections) {
+                        collectionIds.add(collection.getId());
+                    }
+                    if (collectionIds.isEmpty()) {
+                        callback.onSuccess(collections);
+                        return;
+                    }
+                    db.collection("userCollectionFollows")
+                            .whereEqualTo("userId", currentUserId)
+                            .whereIn("collectionId", collectionIds)
+                            .get()
+                            .addOnSuccessListener(followSnapshots -> {
+                                List<String> followedIds = new ArrayList<>();
+                                for (var doc : followSnapshots) {
+                                    String collectionId = doc.getString("collectionId");
+                                    if (collectionId != null) {
+                                        followedIds.add(collectionId);
+                                    }
+                                }
+                                for (VocabCollection collection : collections) {
+                                    collection.setFollowing(followedIds.contains(collection.getId()));
+                                }
+                                callback.onSuccess(collections);
+                            })
+                            .addOnFailureListener(callback::onFailure);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
 }

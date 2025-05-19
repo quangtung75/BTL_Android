@@ -149,4 +149,18 @@ public class VocabCollection implements Parcelable {
     public String getStability() {
         return "Some value";
     }
+
+    @Override
+    public String toString() {
+        return "VocabCollection{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", ownerId='" + ownerId + '\'' +
+                ", followerCount=" + followerCount +
+                ", cardCount=" + cardCount +
+                ", isOwned=" + isOwned +
+                ", isFollowing=" + isFollowing +
+                '}';
+    }
 }
