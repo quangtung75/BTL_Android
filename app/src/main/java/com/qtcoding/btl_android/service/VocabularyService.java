@@ -79,15 +79,16 @@ public class VocabularyService {
                     @Nullable
                     @Override
                     public Void apply(@NonNull Transaction transaction) throws FirebaseFirestoreException {
-                        // 1. Xóa từ vựng
-                        DocumentReference vocabRef = db.collection("vocabularies").document(vocabulary.getId());
-                        transaction.delete(vocabRef);
-
-                        // 2. Giảm cardCount
+                        // 1. Giảm cardCount
                         DocumentReference collectionRef = db.collection("vocabCollections").document(vocabulary.getCollectionId());
                         DocumentSnapshot snapshot = transaction.get(collectionRef);
                         Long currentCount = snapshot.getLong("cardCount");
                         if (currentCount == null || currentCount <= 0) currentCount = 1L;
+
+                        // 2. Xóa từ vựng
+                        DocumentReference vocabRef = db.collection("vocabularies").document(vocabulary.getId());
+                        transaction.delete(vocabRef);
+
                         transaction.update(collectionRef, "cardCount", currentCount - 1);
 
                         return null;
