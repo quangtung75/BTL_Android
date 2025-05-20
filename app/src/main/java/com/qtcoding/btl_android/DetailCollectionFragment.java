@@ -2,6 +2,7 @@ package com.qtcoding.btl_android;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +25,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import com.qtcoding.btl_android.adapter.VocabularyAdapter;
 import com.qtcoding.btl_android.model.VocabCollection;
 import com.qtcoding.btl_android.model.Vocabulary;
 import com.qtcoding.btl_android.service.ServiceCallback;
@@ -42,7 +44,9 @@ public class DetailCollectionFragment extends Fragment {
     private FloatingActionButton fab;
     private NavController navController;
     private RecyclerView rvVocabulary;
+    private VocabularyAdapter adapter;
     private VocabCollection currentCollection;
+    private TextToSpeech textToSpeech;
     private String currentUserId;
 
     @Override
@@ -55,6 +59,7 @@ public class DetailCollectionFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         initView(view);
+        initTextToSpeech();
         setEvents();
         if (getArguments() != null) {
             currentCollection = DetailCollectionFragmentArgs.fromBundle(getArguments()).getCollection();
@@ -75,6 +80,15 @@ public class DetailCollectionFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown(); // Giải phóng TextToSpeech
+        }
+    }
+
     private void initView(View view) {
         toolbar = view.findViewById(R.id.toolbar);
         etCollectionName = view.findViewById(R.id.etCollectionName);
@@ -82,10 +96,25 @@ public class DetailCollectionFragment extends Fragment {
         tvVocabularyCount = view.findViewById(R.id.tvVocabularyCount);
         btnStartStudy = view.findViewById(R.id.btnStudy);
         rvVocabulary = view.findViewById(R.id.rvCollectionItems);
-
+        adapter = new VocabularyAdapter();
+        rvVocabulary.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvVocabulary.setAdapter(adapter);
         fab = view.findViewById(R.id.fab);
         navController = Navigation.findNavController(view);
         currentUserId = ServiceManager.getInstance().getAuthService().getCurrentUser().getUid();
+    }
+
+    private void initTextToSpeech() {
+        textToSpeech = new TextToSpeech(getContext(), status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int result = textToSpeech.setLanguage(Locale.US);
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Toast.makeText(getContext(), "Language not supported. !", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(getContext(), "Initialization failed.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setEvents() {
@@ -126,6 +155,26 @@ public class DetailCollectionFragment extends Fragment {
             }
         });
 
+        adapter.setOnClick(new VocabularyAdapter.OnVocabClickListener() {
+            @Override
+            public void onVocabClick(Vocabulary vocabulary) {
+                if(currentCollection.isOwned()) {
+                    DetailCollectionFragmentDirections.ActionDetailCollectionFragmentToAddVocabFragment action =
+                            DetailCollectionFragmentDirections.actionDetailCollectionFragmentToAddVocabFragment(vocabulary);
+                    navController.navigate(action);
+                }
+            }
+
+            @Override
+            public void onSpeakerClick(Vocabulary vocabulary) {
+                String wordToSpeak = vocabulary.getWord();
+                if (wordToSpeak != null && !wordToSpeak.isEmpty()) {
+                    textToSpeech.speak(wordToSpeak, TextToSpeech.QUEUE_FLUSH, null, null);
+                } else {
+                    Toast.makeText(getContext(), "No word found!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     private void showStudySettingsDialog() {
@@ -206,7 +255,7 @@ public class DetailCollectionFragment extends Fragment {
                 .getVocabulariesByCollectionId(currentCollection.getId(), new ServiceCallback<List<Vocabulary>>() {
                     @Override
                     public void onSuccess(List<Vocabulary> result) {
-                        Log.d("Vocabularies", result.toString());
+                        adapter.setVocabList(result);
                         tvVocabularyCount.setText(String.valueOf(result.size()));
                     }
 
