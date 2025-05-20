@@ -24,6 +24,7 @@ public class Vocabulary implements Parcelable {
         this.collectionId = collectionId;
     }
 
+    //Sử dụng để truyền dữ liệu giữa các thành phần trong ứng dụng Android (F t F)
     protected Vocabulary(Parcel in) {
         id = in.readString();
         word = in.readString();
@@ -32,6 +33,7 @@ public class Vocabulary implements Parcelable {
         collectionId = in.readString();
     }
 
+    //Ghi  thuộc tính của đối tượng vào Parcel để truyền đi
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(id);
@@ -46,6 +48,7 @@ public class Vocabulary implements Parcelable {
         return 0;
     }
 
+    //đối tượng tĩnh để tạo đối tượng Vocabulary từ Parcel
     public static final Creator<Vocabulary> CREATOR = new Creator<Vocabulary>() {
         @Override
         public Vocabulary createFromParcel(Parcel in) {
@@ -109,6 +112,7 @@ public class Vocabulary implements Parcelable {
                 ", collectionId='" + collectionId + '\'' +
                 '}';
     }
+    //Chuyển đổi Vocabulary thành Map để lưu vào Firestore.
     public Map<String, Object> toMap() {
         Map<String, Object> result = new HashMap<>();
         result.put("id", id);

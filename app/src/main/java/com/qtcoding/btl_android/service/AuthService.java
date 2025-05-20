@@ -9,12 +9,15 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class AuthService {
+    //sd để tương tác Auth của Firebase
     private final FirebaseAuth firebaseAuth;
 
+    //khởi tạo AuthService
     public AuthService() {
         firebaseAuth = FirebaseAuth.getInstance();
     }
 
+    //Lấy ng dùng hiện tại
     public FirebaseUser getCurrentUser() {
         return firebaseAuth.getCurrentUser();
     }
@@ -31,6 +34,7 @@ public class AuthService {
     }
 
     public void login(String email, String password, ServiceCallback<Void> callback){
+        //Gọi API firebase để đăng nhập
         firebaseAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {

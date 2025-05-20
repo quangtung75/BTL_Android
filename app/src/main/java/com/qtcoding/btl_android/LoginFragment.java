@@ -29,12 +29,14 @@ public class LoginFragment extends Fragment {
     private String email, password;
 
 
+    //tạo và trả về gd login
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_login, container, false);
     }
 
+    //Khởi tạo thành phần gq và thiết lập sự kiện
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -42,6 +44,7 @@ public class LoginFragment extends Fragment {
         setEvents();
     }
 
+    //Ánh xạ các thành phần gd
     private void initView(View view){
         edtEmail = view.findViewById(R.id.edt_email_login);
         edtPassword = view.findViewById(R.id.edt_password_login);
@@ -52,6 +55,7 @@ public class LoginFragment extends Fragment {
         navController = Navigation.findNavController(view);
     }
 
+    //xử lý sự kiện
     private void setEvents(){
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -75,6 +79,7 @@ public class LoginFragment extends Fragment {
         });
     }
 
+    //gọi AuthService thực hiện đăng nhập
     private void performLogin(){
         progressBar.setVisibility(View.VISIBLE);
         ServiceManager.getInstance().getAuthService().login(email, password, new ServiceCallback<Void>() {
@@ -98,6 +103,7 @@ public class LoginFragment extends Fragment {
 //        Toast.makeText(getContext(),"Login with Google", Toast.LENGTH_SHORT).show();
 //    }
 
+    //validate dữ liêệu đầu vaào
     private boolean validateData(){
         email = edtEmail.getText().toString();
         password = edtPassword.getText().toString();
