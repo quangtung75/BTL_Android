@@ -98,6 +98,17 @@ public class Vocabulary implements Parcelable {
         this.collectionId = collectionId;
     }
 
+
+    @Override
+    public String toString() {
+        return "Vocabulary{" +
+                "id='" + id + '\'' +
+                ", word='" + word + '\'' +
+                ", meaning='" + meaning + '\'' +
+                ", example='" + example + '\'' +
+                ", collectionId='" + collectionId + '\'' +
+                '}';
+    }
     public Map<String, Object> toMap() {
         Map<String, Object> result = new HashMap<>();
         result.put("id", id);

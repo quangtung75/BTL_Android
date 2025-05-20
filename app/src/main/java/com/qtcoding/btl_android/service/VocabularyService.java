@@ -13,6 +13,9 @@ import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.Transaction;
 import com.qtcoding.btl_android.model.Vocabulary;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class VocabularyService {
     private FirebaseFirestore db;
 
@@ -101,5 +104,22 @@ public class VocabularyService {
                         callback.onFailure(e);
                     }
                 });
+    }
+
+    public void getVocabulariesByCollectionId(String collectionId, ServiceCallback<List<Vocabulary>> callback) {
+        db.collection("vocabularies")
+                .whereEqualTo("collectionId", collectionId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Vocabulary> result = new ArrayList<>();
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                        Vocabulary vocab = doc.toObject(Vocabulary.class);
+                        if (vocab != null) {
+                            result.add(vocab);
+                        }
+                    }
+                    callback.onSuccess(result);
+                })
+                .addOnFailureListener(callback::onFailure);
     }
 }

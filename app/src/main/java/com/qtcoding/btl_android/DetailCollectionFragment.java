@@ -1,64 +1,228 @@
 package com.qtcoding.btl_android;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link DetailCollectionFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
+
+import com.qtcoding.btl_android.model.VocabCollection;
+import com.qtcoding.btl_android.model.Vocabulary;
+import com.qtcoding.btl_android.service.ServiceCallback;
+import com.qtcoding.btl_android.service.ServiceManager;
+
+import java.util.List;
+import java.util.Locale;
+
 public class DetailCollectionFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public DetailCollectionFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment DetailCollectionFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static DetailCollectionFragment newInstance(String param1, String param2) {
-        DetailCollectionFragment fragment = new DetailCollectionFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
+    private MaterialToolbar toolbar;
+    private TextView etCollectionName;
+    private ImageView btnToolbar;
+    private TextView tvVocabularyCount;
+    private Button btnStartStudy;
+    private FloatingActionButton fab;
+    private NavController navController;
+    private RecyclerView rvVocabulary;
+    private VocabCollection currentCollection;
+    private String currentUserId;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_detail_collection, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        setEvents();
+        if (getArguments() != null) {
+            currentCollection = DetailCollectionFragmentArgs.fromBundle(getArguments()).getCollection();
+            updateUI(); // Cập nhật UI sau khi lấy được đối tượng
+            loadVocabularies();
+        } else {
+            // Xử lý trường hợp không có arguments
+            Log.e("DetailCollectionFragment", "No arguments found");
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (currentCollection != null) {
+            updateUI();
+            loadVocabularies();
+        }
+    }
+
+    private void initView(View view) {
+        toolbar = view.findViewById(R.id.toolbar);
+        etCollectionName = view.findViewById(R.id.etCollectionName);
+        btnToolbar = view.findViewById(R.id.btnToolbar);
+        tvVocabularyCount = view.findViewById(R.id.tvVocabularyCount);
+        btnStartStudy = view.findViewById(R.id.btnStudy);
+        rvVocabulary = view.findViewById(R.id.rvCollectionItems);
+
+        fab = view.findViewById(R.id.fab);
+        navController = Navigation.findNavController(view);
+        currentUserId = ServiceManager.getInstance().getAuthService().getCurrentUser().getUid();
+    }
+
+    private void setEvents() {
+        // Nút back trên toolbar
+        toolbar.setNavigationOnClickListener(v -> navController.navigateUp());
+
+
+        // Nút toolbar (save hoặc follow/unfollow)
+        btnToolbar.setOnClickListener(v -> {
+            if (currentCollection == null) return;
+            if (currentCollection.isOwned()) {
+                // Navigate to AddCollectionFragment (Edit)
+                DetailCollectionFragmentDirections.ActionDetailCollectionFragmentToAddCollectionFragment action =
+                        DetailCollectionFragmentDirections.actionDetailCollectionFragmentToAddCollectionFragment(currentCollection);
+                navController.navigate(action);
+            } else {
+                performToggleFollow();
+            }
+        });
+
+        // Nút Start Study
+        btnStartStudy.setOnClickListener(v -> {
+            if (currentCollection == null) {
+                Toast.makeText(getContext(), "No collection selected", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showStudySettingsDialog();
+        });
+
+        // FAB để thêm từ vựng
+        fab.setOnClickListener(v -> {
+            if (currentCollection != null && currentCollection.isOwned()) {
+                Vocabulary vocabulary = new Vocabulary();
+                vocabulary.setCollectionId(currentCollection.getId());
+                DetailCollectionFragmentDirections.ActionDetailCollectionFragmentToAddVocabFragment action =
+                        DetailCollectionFragmentDirections.actionDetailCollectionFragmentToAddVocabFragment(vocabulary);
+                navController.navigate(action);
+            }
+        });
+
+    }
+
+    private void showStudySettingsDialog() {
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+        View dialogView = inflater.inflate(R.layout.dialog_study_settings, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setView(dialogView);
+
+        TextInputEditText etQuestionCount = dialogView.findViewById(R.id.etQuestionCount);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancel);
+        Button btnStart = dialogView.findViewById(R.id.btnStart);
+
+        AlertDialog dialog = builder.create();
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnStart.setOnClickListener(v -> {
+            String questionCountStr = etQuestionCount.getText().toString();
+            if (questionCountStr.isEmpty()) {
+                Toast.makeText(getContext(), "Please enter number of questions", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            int numberOfQuestions;
+            try {
+                numberOfQuestions = Integer.parseInt(questionCountStr);
+                if (numberOfQuestions < 1) {
+                    Toast.makeText(getContext(), "Number of questions must be at least 1", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                Toast.makeText(getContext(), "Invalid number format", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            DetailCollectionFragmentDirections.ActionDetailCollectionFragmentToStudyFragment action =
+                    DetailCollectionFragmentDirections.actionDetailCollectionFragmentToStudyFragment(currentCollection);
+            action.setNumberOfQuestions(numberOfQuestions);
+            navController.navigate(action);
+
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+
+    private void performToggleFollow() {
+        if (currentCollection == null) return;
+        ServiceManager.getInstance().getVocabCollectionService().toggleFollow(currentUserId, currentCollection.getId(),
+                currentCollection.isFollowing(), new ServiceCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        boolean newFollowState = !currentCollection.isFollowing();
+                        currentCollection.setFollowing(newFollowState);
+                        updateUI();
+                        Toast.makeText(getContext(), newFollowState ? "Followed" : "Unfollowed", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Toast.makeText(getContext(), "Failed to toggle follow: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void updateUI() {
+        if (currentCollection == null) return;
+        etCollectionName.setText(currentCollection.getName());
+        tvVocabularyCount.setText(String.valueOf(currentCollection.getCardCount()));
+        updateToolbarIcon();
+        fab.setVisibility(currentCollection.isOwned() ? View.VISIBLE : View.GONE);
+        etCollectionName.setEnabled(currentCollection.isOwned());
+    }
+
+    private void loadVocabularies() {
+        ServiceManager.getInstance().getVocabularyService()
+                .getVocabulariesByCollectionId(currentCollection.getId(), new ServiceCallback<List<Vocabulary>>() {
+                    @Override
+                    public void onSuccess(List<Vocabulary> result) {
+                        Log.d("Vocabularies", result.toString());
+                        tvVocabularyCount.setText(String.valueOf(result.size()));
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Toast.makeText(getContext(), "Failed to load vocabularies: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void updateToolbarIcon() {
+        if (currentCollection == null) return;
+        if (currentCollection.isOwned()) {
+            btnToolbar.setImageResource(R.drawable.ic_edit);
+        } else {
+            btnToolbar.setImageResource(currentCollection.isFollowing() ? R.drawable.ic_heart_solid : R.drawable.ic_heart_regular);
+        }
     }
 }
