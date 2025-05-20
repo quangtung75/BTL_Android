@@ -1,6 +1,7 @@
 package com.qtcoding.btl_android;
 
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -36,7 +37,12 @@ public class MainActivity extends AppCompatActivity {
 
         // Điều hướng đến trang chính nếu người dùng đã đăng nhập
         if(ServiceManager.getInstance().getAuthService().getCurrentUser() != null) {
-            navController.navigate(R.id.action_auth_to_main);
+            int currentDestinationId = navController.getCurrentDestination().getId();
+            if (currentDestinationId == R.id.loginFragment || currentDestinationId == R.id.signUpFragment) {
+                navController.navigate(R.id.action_auth_to_main);
+            } else {
+                Log.d("Navigation", "Already in mainNavigation, no need to navigate");
+            }
         }
     }
 
