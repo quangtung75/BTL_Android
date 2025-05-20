@@ -69,6 +69,7 @@ public class StudyFragment extends Fragment {
         }
     }
 
+
     private void initView(View view) {
         toolbar = view.findViewById(R.id.toolbar);
         tvQuestionNumber = view.findViewById(R.id.tvQuestionNumber);
