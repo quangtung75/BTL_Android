@@ -46,7 +46,7 @@ public class LoginFragment extends Fragment {
         edtEmail = view.findViewById(R.id.edt_email_login);
         edtPassword = view.findViewById(R.id.edt_password_login);
         btnLogin = view.findViewById(R.id.btn_login);
-        btnLoginWithGoogle = view.findViewById(R.id.btn_loginWithGoogle);
+        //btnLoginWithGoogle = view.findViewById(R.id.btn_loginWithGoogle);
         tvDontHaveAccount = view.findViewById(R.id.tv_dontHaveAccount);
         progressBar = view.findViewById(R.id.progressBar);
         navController = Navigation.findNavController(view);
@@ -61,12 +61,12 @@ public class LoginFragment extends Fragment {
                 }
             }
         });
-        btnLoginWithGoogle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                performLoginWithGoogle();
-            }
-        });
+//        btnLoginWithGoogle.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                performLoginWithGoogle();
+//            }
+//        });
         tvDontHaveAccount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -94,9 +94,9 @@ public class LoginFragment extends Fragment {
         });
     }
 
-    private void performLoginWithGoogle(){
-        Toast.makeText(getContext(),"Login with Google", Toast.LENGTH_SHORT).show();
-    }
+//    private void performLoginWithGoogle(){
+//        Toast.makeText(getContext(),"Login with Google", Toast.LENGTH_SHORT).show();
+//    }
 
     private boolean validateData(){
         email = edtEmail.getText().toString();
