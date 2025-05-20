@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VocabularyService {
+
+    //lấy csdl từ firebase
     private FirebaseFirestore db;
 
     public VocabularyService() {
@@ -29,14 +31,14 @@ public class VocabularyService {
             @Nullable
             @Override
             public Void apply(@NonNull Transaction transaction) throws FirebaseFirestoreException {
-                // 1. Tăng cardCount của bộ sưu tập
+                // 1. Tăng cardCount của collection
                 DocumentReference collectionRef = db.collection("vocabCollections").document(vocabulary.getCollectionId());
                 DocumentSnapshot snapshot = transaction.get(collectionRef);
                 Long currentCount = snapshot.getLong("cardCount");
                 if (currentCount == null) currentCount = 0L;
                 transaction.update(collectionRef, "cardCount", currentCount + 1);
 
-                // 2. Thêm từ vựng
+                // 2. Thêm vocab
                 DocumentReference vocabRef = db.collection("vocabularies").document(vocabulary.getId());
                 transaction.set(vocabRef, vocabulary.toMap()); // Sử dụng toMap()
 
@@ -56,6 +58,7 @@ public class VocabularyService {
         });
     }
 
+    //cập nhật thông tin vocab
     public void updateVocabulary(Vocabulary vocabulary, ServiceCallback<Void> callback) {
         db.collection("vocabularies").document(vocabulary.getId())
                 .set(vocabulary.toMap(), SetOptions.merge()) // Sử dụng toMap()
@@ -73,7 +76,7 @@ public class VocabularyService {
                 });
     }
 
-    // Xóa từ vựng
+    // Xóa vocab
     public void deleteVocabulary(Vocabulary vocabulary, ServiceCallback<Void> callback) {
         db.runTransaction(new Transaction.Function<Void>() {
                     @Nullable
@@ -83,9 +86,9 @@ public class VocabularyService {
                         DocumentReference collectionRef = db.collection("vocabCollections").document(vocabulary.getCollectionId());
                         DocumentSnapshot snapshot = transaction.get(collectionRef);
                         Long currentCount = snapshot.getLong("cardCount");
-                        if (currentCount == null || currentCount <= 0) currentCount = 1L;
+                        if (currentCount == null || currentCount <= 0) currentCount = 1L; //đảm baor ko âm
 
-                        // 2. Xóa từ vựng
+                        // 2. Xóa vocab
                         DocumentReference vocabRef = db.collection("vocabularies").document(vocabulary.getId());
                         transaction.delete(vocabRef);
 

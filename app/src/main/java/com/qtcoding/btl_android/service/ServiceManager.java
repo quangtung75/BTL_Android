@@ -28,7 +28,7 @@ public class ServiceManager {
         return instance;
     }
 
-    // Add methods to get services
+    // khai báo các phương thức để lấy services
     public AuthService getAuthService() {
         return authService;
     }

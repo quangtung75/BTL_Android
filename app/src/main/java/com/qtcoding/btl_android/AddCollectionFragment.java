@@ -30,12 +30,14 @@ public class AddCollectionFragment extends Fragment {
     private VocabCollection vocabCollection;
     private NavController navController;
 
+    //tạo và trả về gd add collection
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_add_collection, container, false);
     }
 
+    //Khởi tạo thành phần gq và thiết lập sự kiện
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -43,6 +45,7 @@ public class AddCollectionFragment extends Fragment {
         setEvents();
     }
 
+    //Ánh xạ các thành phần gd
     private void initView(View view){
         toolbar = view.findViewById(R.id.toolbar);
         edtTitle = view.findViewById(R.id.etTitle);
@@ -54,7 +57,7 @@ public class AddCollectionFragment extends Fragment {
 
         navController = Navigation.findNavController(view);
 
-        // lay collection ID tu arguments de kiem tra la loai "Add" or "Edit"
+        // lay collection ID tu arguments kiểm tra xem là "Add" or "Edit"
         if (getArguments() != null) {
             vocabCollection = AddCollectionFragmentArgs.fromBundle(getArguments()).getVocabCollection();
             if (vocabCollection != null) {
@@ -64,13 +67,14 @@ public class AddCollectionFragment extends Fragment {
                 edtTitle.setText(vocabCollection.getName());
                 edtDescription.setText(vocabCollection.getDescription());
             } else {
-                // reset UI o Add
+                // ẩn Delete
                 toolbar.setTitle("Add Collection");
                 btnDelete.setVisibility(View.GONE);
             }
         }
     }
 
+    //xử lý sk
     private void setEvents(){
         //XU ly Save
         btnSave.setOnClickListener(new View.OnClickListener() {
@@ -79,6 +83,7 @@ public class AddCollectionFragment extends Fragment {
                 String title = edtTitle.getText().toString().trim();
                 String description = edtDescription.getText().toString().trim();
                 String currentUserId = ServiceManager.getInstance().getAuthService().getCurrentUser().getUid();
+                //validate dữ liệu
                 if (title.isEmpty() || description.isEmpty()) {
                     Toast.makeText(getContext(), "Please fill in all fields", Toast.LENGTH_SHORT).show();
                     return;
@@ -86,7 +91,7 @@ public class AddCollectionFragment extends Fragment {
                 progressBar.setVisibility(View.VISIBLE);
                 // xu ly logic collection
                 if (vocabCollection != null) {
-                    // Cap nhat collection cu
+                    // Cap nhat collection
 
                     vocabCollection.setName(title);
                     vocabCollection.setDescription(description);
@@ -106,7 +111,7 @@ public class AddCollectionFragment extends Fragment {
                     });
                 }
                 else {
-                    // tao moi collection
+                    // tao mới collection
 
                     VocabCollection newCollection = new VocabCollection();
                     newCollection.setName(title);
@@ -129,13 +134,15 @@ public class AddCollectionFragment extends Fragment {
                 }
             }
         });
+
+        //xử lý quay lại
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 navController.navigateUp();
             }
         });
-        // xu ly nut Xoa, chi kha dung khi o Edit
+        // xu ly nut Xoa, chỉ có thể dùng ở Edit
         btnDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

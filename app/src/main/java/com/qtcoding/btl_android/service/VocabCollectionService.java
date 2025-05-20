@@ -19,11 +19,14 @@ import java.util.Map;
 import java.util.UUID;
 
 public class VocabCollectionService {
+    //instance của firebase để tương tác csdl
     private final FirebaseFirestore db;
 
     public VocabCollectionService() {
         db = FirebaseFirestore.getInstance();
     }
+
+    //lấy ds top 10 có follow cao nhất
     public void getTopCollections(String currentUserId, ServiceCallback<List<VocabCollection>> callback) {
         db.collection("vocabCollections")
                 .orderBy("followerCount", Query.Direction.DESCENDING)
@@ -230,13 +233,13 @@ public class VocabCollectionService {
                 .addOnFailureListener(callback::onFailure);
     }
 
-    //cac ham crud
+    //thêm collection mới
     public void addCollection(String currentUserId, VocabCollection collection, ServiceCallback<Void> callback){
         collection.setId(UUID.randomUUID().toString());
         collection.setOwnerId(currentUserId);
         collection.setFollowerCount(0);
         collection.setCardCount(0);
-        collection.setOwned(true); //set ng tao collection la chu
+        collection.setOwned(true); //set ng tao collection la chủ
         collection.setFollowing(false); //do moi tao nen chua co ai follow
 
         db.collection("vocabCollections").document(collection.getId()).set(collection).addOnSuccessListener(new OnSuccessListener<Void>() {
@@ -270,6 +273,8 @@ public class VocabCollectionService {
                     }
                 });
     }
+
+    //cập nật tên, mô tả collection
     public void updateCollection(VocabCollection collection, ServiceCallback<Void> callback){
         db.collection("vocabCollections").document(collection.getId())
                 .update("name", collection.getName(), "description", collection.getDescription())
@@ -287,18 +292,19 @@ public class VocabCollectionService {
                 });
     }
 
+    //xóa collection và dữ liệu liên quan
     public void deleteCollection(String currentUserId, String collectionId, ServiceCallback<Void> callback){
-        //xoa khoi collection
+        //xoa trong vocabCollection
         db.collection("vocabCollections").document(collectionId).delete()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
-                        //xoa khoi userCollection
+                        //xoa trong userOwnedCollections
                         db.collection("userOwnedCollections").document(currentUserId + "_" + collectionId)
                                 .delete().addOnSuccessListener(new OnSuccessListener<Void>() {
                                     @Override
                                     public void onSuccess(Void unused) {
-                                        //xoa het vocab lien quan
+                                        //xoa hết vocab trong collection
                                         db.collection("vocabularies").whereEqualTo("collectionId", collectionId)
                                                 .get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                                                     @Override
@@ -306,7 +312,7 @@ public class VocabCollectionService {
                                                         for (var doc : queryDocumentSnapshots) {
                                                             doc.getReference().delete();
                                                         }
-                                                        // xoa het follow trong userCollectionFollows
+                                                        // xoa hết follow trong userCollectionFollows
                                                         db.collection("userCollectionFollows").whereEqualTo("collectionId", collectionId)
                                                                 .get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                                                                     @Override

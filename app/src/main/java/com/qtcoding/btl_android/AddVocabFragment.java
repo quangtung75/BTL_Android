@@ -32,12 +32,14 @@ public class AddVocabFragment extends Fragment {
     private NavController navController;
     private Vocabulary currentVocabulary;
 
+    //tạo và trả về gd
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_add_vocab, container, false);
     }
 
+    //Khởi tạo thành phần gq và thiết lập sự kiện
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -49,6 +51,7 @@ public class AddVocabFragment extends Fragment {
         }
     }
 
+    //Ánh xạ các thành phần gd
     private void initView(View view) {
         toolbar = view.findViewById(R.id.toolbar);
         etWord = view.findViewById(R.id.etWord);
@@ -60,8 +63,9 @@ public class AddVocabFragment extends Fragment {
         navController = Navigation.findNavController(view);
     }
 
+    //xử lý sk
     private void setEvents(){
-        // Ve trang truoc
+        // nust quay lai
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -74,7 +78,7 @@ public class AddVocabFragment extends Fragment {
             public void onClick(View view) {
                 progressBar.setVisibility(View.VISIBLE);
                 if(currentVocabulary.getId() != null) {
-                    // Cap nhat vocab hien co
+                    // Cap nhat vocab nếu chỉnh sửa
                     String word = etWord.getText().toString();
                     String meaning = etMeaning.getText().toString();
                     String example = etExample.getText().toString();
@@ -97,7 +101,7 @@ public class AddVocabFragment extends Fragment {
                         }
                     });
                 } else {
-                    // Tao moi vocab
+                    // Tao mới vocab
                     String word = etWord.getText().toString();
                     String meaning = etMeaning.getText().toString();
                     String example = etExample.getText().toString();
@@ -147,6 +151,7 @@ public class AddVocabFragment extends Fragment {
         });
     }
 
+    //Cập nhật giao diện theo chế độ
     private void updateUI() {
         if (currentVocabulary.getId() != null) {
             toolbar.setTitle("Edit Vocabulary");
